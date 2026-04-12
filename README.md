@@ -24,7 +24,7 @@ A sim starts with an amount of dough. Extra dough will be made if values drop to
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/jhowell-99/pizzeria-des
 cd pizzeria-des
 ```
 
