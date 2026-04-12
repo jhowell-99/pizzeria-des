@@ -1,0 +1,45 @@
+# tests/test_simulation.py
+import numpy as np
+
+
+def test_completed_orders_nonzero(pizzeria, env):
+    np.random.seed(42)
+    pizzeria.run()
+    env.run(until=pizzeria.config.sim_time)
+    assert pizzeria.metrics.completed_orders > 0
+
+
+def test_wait_times_are_positive(pizzeria, env):
+    np.random.seed(42)
+    pizzeria.run()
+    env.run(until=pizzeria.config.sim_time)
+    assert all(t > 0 for t in pizzeria.metrics.wait_times)
+
+
+def test_wait_times_exceed_minimum_pipeline(pizzeria, env):
+    """No customer can be served faster than the irreducible pipeline time."""
+    np.random.seed(42)
+    min_pipeline = (
+        pizzeria.config.mean_order_time
+        + pizzeria.config.min_prep_time
+        + pizzeria.config.min_bake_time
+        + pizzeria.config.mean_serve_time
+    )
+    pizzeria.run()
+    env.run(until=pizzeria.config.sim_time)
+    assert min(pizzeria.metrics.wait_times) >= min_pipeline
+
+
+def test_dough_never_goes_negative(pizzeria, env):
+    """Container level should never drop below zero."""
+    levels = []
+
+    def monitor():
+        while True:
+            levels.append(pizzeria.dough.level)
+            yield env.timeout(1)
+
+    pizzeria.run()
+    env.process(monitor())
+    env.run(until=pizzeria.config.sim_time)
+    assert min(levels) >= 0
