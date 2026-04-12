@@ -13,7 +13,7 @@ def main():
 
     env.run(until=config.sim_time)
 
-    print(model.metrics.summary())
+    model.metrics.report()
 
 
 if __name__ == "__main__":

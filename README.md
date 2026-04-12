@@ -15,7 +15,7 @@ The simulation models a typical pizzeria workflow:
 5. Pizza is served (waiter)
 6. Customer leaves
 
-A parallel process continuously produces pizza dough, competing for chef time.
+A sim starts with an amount of dough. Extra dough will be made if values drop too low.
 
 ---
 
