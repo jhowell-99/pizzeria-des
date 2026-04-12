@@ -3,7 +3,7 @@ import simpy
 from pizzeria_sim.metrics import Metrics
 from pizzeria_sim.processes import (
     customer_arrivals,
-    make_dough,
+    monitor_dough,
 )
 
 
@@ -17,16 +17,17 @@ class Pizzeria:
         self.chef = simpy.Resource(env, capacity=config.num_chefs)
         self.waiter = simpy.Resource(env, capacity=config.num_waiters)
 
-        # Consumable
+        # Consumable — start empty, opening batch fills it at t=0
         self.dough = simpy.Container(
             env,
             capacity=config.dough_capacity,
-            init=config.initial_dough,
+            init=config.initial_dough_batch,
         )
+
+        self.emergency_batch_in_progress = False
 
         self.metrics = Metrics()
 
     def run(self):
-        # Start processes
+        self.env.process(monitor_dough(self))
         self.env.process(customer_arrivals(self))
-        self.env.process(make_dough(self))
