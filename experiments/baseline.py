@@ -1,19 +1,12 @@
-import simpy
-
-from pizzeria_sim.config import PizzeriaConfig
-from pizzeria_sim.model import Pizzeria
+from replications import export_results, run_replications
 
 
 def main():
-    env = simpy.Environment()
+    from pizzeria_sim.config import PizzeriaConfig
+
     config = PizzeriaConfig()
-
-    model = Pizzeria(env, config)
-    model.run()
-
-    env.run(until=config.sim_time)
-
-    model.metrics.report()
+    results = run_replications(config, n=200)
+    export_results(results, config, output_dir="outputs")
 
 
 if __name__ == "__main__":

@@ -33,4 +33,4 @@ class PizzeriaConfig:
     mean_dough_batch_time: float = 30.0  # 30 min to prep a full batch
     std_dough_batch_time: float = 5.0
 
-    sim_time: int = 360
+    sim_time: int = 200

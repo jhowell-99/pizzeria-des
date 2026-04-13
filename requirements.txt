@@ -4,4 +4,6 @@ packaging==26.0
 pluggy==1.6.0
 Pygments==2.20.0
 pytest==9.0.3
+scipy==1.17.1
 simpy==4.1.1
+tqdm==4.67.3
