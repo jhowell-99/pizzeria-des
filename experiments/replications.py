@@ -62,22 +62,32 @@ def aggregate(results: list[dict], n: int) -> dict:
 
     stages = ["order", "prep", "bake", "serve"]
 
+    abandoned = [r["abandoned_orders"] for r in results]
+    rates = [r["abandonment_rate"] for r in results]
+    abandoned_queue_means = [
+        r["abandoned_queue_time"]["mean"]
+        for r in results
+        if r["abandoned_queue_time"]
+    ]
+
     return {
         "n_replications": n,
-        "completed_orders": ci(completed),
+        "completed_orders":   ci(completed),
+        "abandoned_orders":   ci(abandoned),
+        "abandonment_rate":   ci(rates),
+        "abandoned_queue_time": ci(abandoned_queue_means) if abandoned_queue_means else {},
         "total_time": {
             "mean": ci(total_means),
-            "p95": ci(total_p95s),
+            "p95":  ci(total_p95s),
         },
         "stages": {
             stage: {
-                "queue_time": aggregate_stage(stage, "queue_time"),
+                "queue_time":   aggregate_stage(stage, "queue_time"),
                 "service_time": aggregate_stage(stage, "service_time"),
             }
             for stage in stages
-        },
+        }
     }
-
 
 def report_replications(results: dict):
     width = 80
@@ -88,37 +98,51 @@ def report_replications(results: dict):
     print(f"{'(' + str(n) + ' replications, 95% confidence intervals)':^{width}}")
     print("=" * width)
 
+    # Throughput
     co = results["completed_orders"]
-    print(
-        f"  Completed orders  :  "
-        f"mean={co['mean']}  std={co['std']}  "
-        f"95% CI=[{co['ci_low']}, {co['ci_high']}]"
-    )
+    print(f"  Completed orders  :  "
+          f"mean={co['mean']}  std={co['std']}  "
+          f"95% CI=[{co['ci_low']}, {co['ci_high']}]")
+
+    ab = results["abandoned_orders"]
+    print(f"  Abandoned orders  :  "
+          f"mean={ab['mean']}  std={ab['std']}  "
+          f"95% CI=[{ab['ci_low']}, {ab['ci_high']}]")
+
+    rate = results["abandonment_rate"]
+    print(f"  Abandonment rate  :  "
+          f"mean={rate['mean']}%  std={rate['std']}  "
+          f"95% CI=[{rate['ci_low']}%, {rate['ci_high']}%]")
+
+    aq = results.get("abandoned_queue_time", {})
+    if aq:
+        print(f"  Abandoned queue   :  "
+              f"mean={aq['mean']}  std={aq['std']}  "
+              f"95% CI=[{aq['ci_low']}, {aq['ci_high']}]")
     print()
 
+    # Total time in system
     def fmt_ci(d):
         if not d:
             return "  no data"
-        return (
-            f"mean={d['mean']:>7}  std={d['std']:>7}  "
-            f"95% CI=[{d['ci_low']:>7}, {d['ci_high']:>7}]"
-        )
+        return (f"mean={d['mean']:>7}  std={d['std']:>7}  "
+                f"95% CI=[{d['ci_low']:>7}, {d['ci_high']:>7}]")
 
     t = results["total_time"]
-    print("  Total time in system (min):")
+    print(f"  Total time in system (min):")
     print(f"    mean  :  {fmt_ci(t['mean'])}")
     print(f"    p95   :  {fmt_ci(t['p95'])}")
     print()
 
-    header = f"  {'Stage':<10} {'Metric':<14} {'mean':>7} {'std':>7} {'CI low':>8} {'CI high':>8}"
+    # Per-stage breakdown
+    header = (f"  {'Stage':<10} {'Metric':<14} {'mean':>7} "
+              f"{'std':>7} {'CI low':>8} {'CI high':>8}")
     print(header)
     print("  " + "-" * (width - 2))
 
     for stage, metrics in results["stages"].items():
-        for metric_name, vals in [
-            ("queue", metrics["queue_time"]),
-            ("service", metrics["service_time"]),
-        ]:
+        for metric_name, vals in [("queue", metrics["queue_time"]),
+                                   ("service", metrics["service_time"])]:
             if not vals:
                 continue
             print(

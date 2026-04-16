@@ -14,6 +14,9 @@ class PizzeriaConfig:
 
     mean_interarrival_time: float = 5.0  # Poisson arrivals → Exponential IAT
 
+    mean_customer_queue_time: int = 10 # Customers wait mean of 10 mins before leaving
+    std_customer_queue_time: int = 2
+
     # Order taking — Erlang-2 (sum of 2 exponentials)
     mean_order_time: float = 2.0  # mean of the full order duration
 

@@ -4,11 +4,22 @@ from numpy import random as rn
 def customer(pizzeria, customer_id):
     arrival_time = pizzeria.env.now
 
+    # Draw patience threshold once on arrival
+    patience = max(0.0, rn.normal(
+        pizzeria.config.mean_customer_queue_time,
+        pizzeria.config.std_customer_queue_time,
+    ))
+
     # ORDER
     queue_start = pizzeria.env.now
     with pizzeria.waiter.request() as req:
         yield req
         queue_time = pizzeria.env.now - queue_start
+
+        if queue_time > patience:
+            pizzeria.metrics.record_abandonment(queue_time)
+            return
+
         service_start = pizzeria.env.now
         order_time = sum(
             rn.exponential(pizzeria.config.mean_order_time / 2) for _ in range(2)
@@ -33,7 +44,6 @@ def customer(pizzeria, customer_id):
         pizzeria.metrics.serve.record(queue_time, pizzeria.env.now - service_start)
 
     pizzeria.metrics.record_total(pizzeria.env.now - arrival_time)
-
 
 def create_pizza(pizzeria):
     yield pizzeria.dough.get(1)
